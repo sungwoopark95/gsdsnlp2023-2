@@ -1,3 +1,9 @@
 .ipynb_checkpoints/
 
 *.zip
+*.model
+*.vocab
+*.bin
+*.bin.optim
+*.json
+*.bat
