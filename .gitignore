@@ -7,3 +7,6 @@
 *.bin.optim
 *.json
 *.bat
+*.pkl
+*.en
+*.es
