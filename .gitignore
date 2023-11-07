@@ -10,3 +10,7 @@
 *.pkl
 *.en
 *.es
+*.ubuntu.*
+*.pyc
+*.npy
+*.pickle
