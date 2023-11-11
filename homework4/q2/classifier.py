@@ -211,13 +211,22 @@ def train(args):
             b_labels = b_labels.to(device)
             logits = model(b_ids, b_mask)
             ### YOUR CODE HERE (~5 lines):
-            ### 1. calculate nll(negative log-likelihood) loss 
+            ### 1. calculate nll(negative log-likelihood) loss
+            loss_fn = nn.CrossEntropyLoss()
+            loss = loss_fn(logits.view(-1, num_labels), b_labels.view(-1))
+            
             ### 2. reset the graidnet after iteration
+            optimizer.zero_grad()
+            
             ### 3. backprop the loss
+            loss.backward()
+            
             ### 4. perform parameter update
+            optimizer.step()
+            
             ### 5. update train loss
+            train_loss += loss.item()
             ### use optimizer and loss defined above
-
             ### YOUR CODE END
             num_batches += 1
 

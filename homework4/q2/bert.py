@@ -52,7 +52,14 @@ class BertSelfAttention(nn.Module):
         # Note again: in the attention_mask non-padding tokens with 0 and padding tokens with a large negative number
 
         ### YOUR CODE HERE (~10 lines)
+        attention_scores = torch.matmul(query, key.transpose(-1, -2))
+        attention_scores = attention_scores / math.sqrt(self.attention_head_size)
+        attention_scores += attention_mask
 
+        # Normalize the attention scores to probabilities
+        attention_probs = nn.Softmax(dim=-1)(attention_scores)
+        attention_probs = self.dropout(attention_probs)
+        output = torch.matmul(attention_probs, value)
         return output
 
     def forward(self, hidden_states, attention_mask):
@@ -65,7 +72,15 @@ class BertSelfAttention(nn.Module):
         ### 1. generate the key, value, query for each token for multi-head attention w/ self.transform() 
         ###     - dimenstion of key(query, value)_layers are of [bs, num_attention_heads, seq_len, attention_head_size]
         ### 2. calculate the multi-head attention
+        key = self.transform(hidden_states, self.key)
+        value = self.transform(hidden_states, self.value)
+        query = self.transform(hidden_states, self.query)
+        attention_out = self.attention(key, query, value, attention_mask)
 
+        # Concatenate the heads
+        attention_out = attention_out.transpose(1, 2)
+        bs, seq_len = attention_out.shape[:2]
+        output = attention_out.contiguous().view(bs, seq_len, self.all_head_size)
         return output
 
 
@@ -94,7 +109,9 @@ class BertLayer(nn.Module):
         ln_layer: layer norm that takes input+sublayer(output)
         """
         ### YOUR CODE HERE (~4 lines)
-
+        output = dense_layer(output)
+        output = dropout(output)
+        final_norm = ln_layer(input + output)
         return final_norm
 
     def forward(self, hidden_states, attention_mask):
@@ -105,9 +122,15 @@ class BertLayer(nn.Module):
         ### TODO
         ### your code here (~6 lines). each block consists of
         ### 1. a multi-head attention layer (BertSelfAttention)
+        attention_out = self.self_attention(hidden_states, attention_mask)
         ### 2. a add-norm that takes the output of BertSelfAttention and the input of BertSelfAttention
+        attention_norm_out = self.add_norm(hidden_states, attention_out, self.attention_dense, 
+                                           self.attention_dropout, self.attention_layer_norm)
         ### 3. a feed forward layer
+        interm_out = self.interm_dense(attention_norm_out)
         ### 4. a add-norm that takes the output of feed forward layer and the input of feed forward layer
+        interm_out = self.interm_af(interm_out)
+        fc_output = self.add_norm(attention_norm_out, interm_out, self.out_dense, self.out_dropout, self.out_layer_norm)
         return fc_output
 
 
